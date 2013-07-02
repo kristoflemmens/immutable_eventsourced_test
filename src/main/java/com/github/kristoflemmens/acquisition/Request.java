@@ -6,7 +6,6 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.UUID;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.skip;
 import static com.google.common.collect.Lists.newArrayList;
@@ -77,7 +76,6 @@ abstract class Request {
         }
 
         ValidatedRequest validate() {
-            checkState(id() != null);
             return applyValidated(new Event.RequestValidated(id(), acquisitionDocument()));
         }
 
