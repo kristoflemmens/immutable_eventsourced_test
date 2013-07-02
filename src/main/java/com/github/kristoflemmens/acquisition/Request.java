@@ -22,7 +22,7 @@ abstract class Request {
         this.uncommittedEvents = uncommittedEvents;
     }
 
-    private static Request unhandled(Event event) {
+    static Request unhandled(Event event) {
         throw new UnsupportedOperationException("Could not handle event " + event);
     }
 
@@ -65,82 +65,9 @@ abstract class Request {
         return acquisitionDocument;
     }
 
-    static class ReceivedRequest extends Request {
-        ReceivedRequest(UUID id, AcquisitionDocument acquisitionDocument, List<Event> uncommittedEvents) {
-            super(id, acquisitionDocument, uncommittedEvents);
-        }
-
-        @Override
-        protected ReceivedRequest markCommitted() {
-            return new ReceivedRequest(id(), acquisitionDocument(), Lists.<Event>newArrayList());
-        }
-
-        ValidatedRequest validate() {
-            return applyValidated(new Event.RequestValidated(id(), acquisitionDocument()));
-        }
-
-        @Override
-        protected Request apply(Event event) {
-            if (event instanceof Event.RequestValidated) {
-                return applyValidated((Event.RequestValidated) event);
-            } else {
-                return unhandled(event);
-            }
-        }
-
-        private ValidatedRequest applyValidated(Event.RequestValidated requestValidated) {
-            List<Event> uncommittedEvents = newArrayList(uncommittedEvents());
-            uncommittedEvents.add(requestValidated);
-            return new ValidatedRequest(id(), acquisitionDocument(), uncommittedEvents);
-        }
-
-    }
-
-    static class ValidatedRequest extends Request {
-
-        ValidatedRequest(UUID id, AcquisitionDocument acquisitionDocument, List<Event> uncommittedEvents) {
-            super(id, acquisitionDocument, uncommittedEvents);
-        }
-
-        @Override
-        protected ValidatedRequest markCommitted() {
-            return new ValidatedRequest(id(), acquisitionDocument(), Lists.<Event>newArrayList());
-        }
-
-        @Override
-        protected Request apply(Event event) {
-            if (event instanceof Event.RequestAcquired) {
-                return applyAcquired((Event.RequestAcquired) event);
-            } else {
-                return unhandled(event);
-            }
-        }
-
-        private AcquiredRequest applyAcquired(Event.RequestAcquired requestAcquired) {
-            List<Event> uncommittedEvents = newArrayList(uncommittedEvents());
-            uncommittedEvents.add(requestAcquired);
-            return new AcquiredRequest(id(), acquisitionDocument(), uncommittedEvents);
-        }
-
-        AcquiredRequest acquire() {
-            return applyAcquired(new Event.RequestAcquired(id(), acquisitionDocument()));
-        }
-
-    }
-
-    static class AcquiredRequest extends Request {
-        AcquiredRequest(UUID id, AcquisitionDocument acquisitionDocument, List<Event> uncommittedEvents) {
-            super(id, acquisitionDocument, uncommittedEvents);
-        }
-
-        @Override
-        protected AcquiredRequest markCommitted() {
-            return new AcquiredRequest(id(), acquisitionDocument(), Lists.<Event>newArrayList());
-        }
-
-        @Override
-        protected Request apply(Event event) {
-            return unhandled(event);
-        }
+    protected List<Event> uncommittedEventsWith(Event event) {
+        List<Event> uncommittedEvents = newArrayList(uncommittedEvents());
+        uncommittedEvents.add(event);
+        return uncommittedEvents;
     }
 }

@@ -8,9 +8,11 @@ import java.util.UUID;
 
 public class AcquisitionDocument {
     private final UUID id;
+    private final String myActor;
 
-    public AcquisitionDocument(UUID id) {
+    public AcquisitionDocument(UUID id, String myActor) {
         this.id = id;
+        this.myActor = myActor;
     }
 
     public UUID id() {

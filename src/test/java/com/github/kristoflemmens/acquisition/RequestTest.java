@@ -5,54 +5,72 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import static com.github.kristoflemmens.acquisition.Request.*;
+import static com.github.kristoflemmens.acquisition.Event.*;
+import static com.github.kristoflemmens.acquisition.Request.loadFromHistory;
 import static java.util.UUID.randomUUID;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.util.Lists.newArrayList;
 
 public class RequestTest {
     private static final UUID ID = randomUUID();
-    private static final AcquisitionDocument ACQUISITION_DOCUMENT = new AcquisitionDocument(ID);
+    private static final AcquisitionDocument ACQUISITION_DOCUMENT = new AcquisitionDocument(ID, "");
+    private static final AcquisitionDocument ACQUISITION_DOCUMENT_WITH_ACTOR = new AcquisitionDocument(ID, "myActor");
 
     @Test
-    public void constructor() throws Exception {
-        Request request = receive(ACQUISITION_DOCUMENT);
+    public void receive() throws Exception {
+        ReceivedRequest request = Request.receive(ACQUISITION_DOCUMENT);
 
-        assertThat(request.uncommittedEvents()).containsExactly(new Event.RequestReceived(ID, ACQUISITION_DOCUMENT));
+        assertThat(request.uncommittedEvents()).containsExactly(new RequestReceived(ID, ACQUISITION_DOCUMENT));
+    }
+
+    @Test
+    public void addActor() throws Exception {
+        ReceivedRequest request = Request.receive(ACQUISITION_DOCUMENT).addActor("myActor");
+
+        assertThat(request.uncommittedEvents()).containsExactly(new RequestReceived(ID, ACQUISITION_DOCUMENT), new ActorAdded(ID, ACQUISITION_DOCUMENT_WITH_ACTOR));
+    }
+
+    @Test
+    public void addActor_LoadFromHistory() throws Exception {
+        ReceivedRequest request = loadFromHistory(Lists.<Event>newArrayList(new RequestReceived(ID, ACQUISITION_DOCUMENT)));
+
+        ReceivedRequest actual = request.addActor("myActor");
+
+        assertThat(actual.uncommittedEvents()).containsExactly(new ActorAdded(ID, ACQUISITION_DOCUMENT_WITH_ACTOR));
     }
 
     @Test
     public void validate_LoadFromHistory() throws Exception {
-        ReceivedRequest request = loadFromHistory(Lists.<Event>newArrayList(new Event.RequestReceived(ID, ACQUISITION_DOCUMENT)));
+        ReceivedRequest request = loadFromHistory(Lists.<Event>newArrayList(new RequestReceived(ID, ACQUISITION_DOCUMENT)));
 
         ValidatedRequest actual = request.validate();
 
-        assertThat(actual.uncommittedEvents()).containsExactly(new Event.RequestValidated(ID, ACQUISITION_DOCUMENT));
+        assertThat(actual.uncommittedEvents()).containsExactly(new RequestValidated(ID, ACQUISITION_DOCUMENT));
     }
 
     @Test
     public void validate() throws Exception {
-        ValidatedRequest actual = receive(ACQUISITION_DOCUMENT).validate();
+        ValidatedRequest actual = Request.receive(ACQUISITION_DOCUMENT).validate();
 
-        assertThat(actual.uncommittedEvents()).containsExactly(new Event.RequestReceived(ID, ACQUISITION_DOCUMENT), new Event.RequestValidated(ID, ACQUISITION_DOCUMENT));
+        assertThat(actual.uncommittedEvents()).containsExactly(new RequestReceived(ID, ACQUISITION_DOCUMENT), new RequestValidated(ID, ACQUISITION_DOCUMENT));
     }
 
     @Test
     public void acquire_LoadFromHistory() throws Exception {
-        ValidatedRequest request = loadFromHistory(newArrayList(new Event.RequestReceived(ID, ACQUISITION_DOCUMENT), new Event.RequestValidated(ID, ACQUISITION_DOCUMENT)));
+        ValidatedRequest request = loadFromHistory(newArrayList(new RequestReceived(ID, ACQUISITION_DOCUMENT), new RequestValidated(ID, ACQUISITION_DOCUMENT)));
 
         AcquiredRequest actual = request.acquire();
 
-        assertThat(actual.uncommittedEvents()).containsExactly(new Event.RequestAcquired(ID, ACQUISITION_DOCUMENT));
+        assertThat(actual.uncommittedEvents()).containsExactly(new RequestAcquired(ID, ACQUISITION_DOCUMENT));
     }
 
     @Test
     public void acquire() throws Exception {
-        AcquiredRequest actual = receive(ACQUISITION_DOCUMENT).validate().acquire();
+        AcquiredRequest actual = Request.receive(ACQUISITION_DOCUMENT).validate().acquire();
 
         assertThat(actual.uncommittedEvents()).containsExactly(
-                new Event.RequestReceived(ID, ACQUISITION_DOCUMENT),
-                new Event.RequestValidated(ID, ACQUISITION_DOCUMENT),
-                new Event.RequestAcquired(ID, ACQUISITION_DOCUMENT));
+                new RequestReceived(ID, ACQUISITION_DOCUMENT),
+                new RequestValidated(ID, ACQUISITION_DOCUMENT),
+                new RequestAcquired(ID, ACQUISITION_DOCUMENT));
     }
 }

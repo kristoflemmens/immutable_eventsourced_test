@@ -63,4 +63,11 @@ abstract class Event {
             super(id, acquisitionDocument);
         }
     }
+
+    public static class ActorAdded extends Event {
+
+        ActorAdded(UUID id, AcquisitionDocument acquisitionDocument) {
+            super(id, acquisitionDocument);
+        }
+    }
 }
